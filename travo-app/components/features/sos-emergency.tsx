@@ -13,10 +13,10 @@ export default function SOSEmergency() {
   const { goBack } = useNavigation();
 
   const emergencyContacts = [
-    { name: 'Police', number: '911', icon: 'shield.fill' },
-    { name: 'Medical', number: '911', icon: 'cross.fill' },
-    { name: 'Fire', number: '911', icon: 'flame.fill' },
-    { name: 'Tourist Helpline', number: '1-800-TRAVEL', icon: 'phone.fill' },
+    { name: 'Police', number: '100', icon: 'shield.fill' },
+    { name: 'Medical', number: '102', icon: 'cross.fill' },
+    { name: 'Fire', number: '101', icon: 'flame.fill' },
+    { name: 'Tourist Helpline', number: '1800-11-1363', icon: 'phone.fill' },
   ];
 
   const handleEmergencyCall = (number: string, service: string) => {
