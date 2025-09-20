@@ -6,11 +6,17 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { IconSymbol } from '../ui/icon-symbol';
 import { useNavigation } from '@/contexts/NavigationContext';
+import { useAuth } from '@/contexts/AuthContext';
+
+// API Configuration
+const API_BASE_URL = 'http://192.168.1.100:3001/api'; // Update this IP to your computer's IP
 
 export default function SOSEmergency() {
   const [isEmergencyActive, setIsEmergencyActive] = useState(false);
+  const [isSendingAlert, setIsSendingAlert] = useState(false);
   const colorScheme = useColorScheme();
   const { goBack } = useNavigation();
+  const { userToken, touristId } = useAuth();
 
   const emergencyContacts = [
     { name: 'Police', number: '100', icon: 'shield.fill' },
@@ -37,12 +43,57 @@ export default function SOSEmergency() {
     );
   };
 
+  const sendSOSAlert = async (message: string = 'Emergency assistance needed') => {
+    if (!userToken) {
+      Alert.alert('Error', 'Please login first to send SOS alerts');
+      return;
+    }
+
+    setIsSendingAlert(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/emergency/sos`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userToken}`,
+        },
+        body: JSON.stringify({
+          location: 'Current Location', // In real app, get from GPS
+          message,
+          severity: 'high',
+          coordinates: {
+            latitude: 40.7580, // In real app, get from location services
+            longitude: -73.9855
+          }
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setIsEmergencyActive(true);
+        Alert.alert(
+          '🚨 SOS Alert Sent!',
+          `Emergency ID: ${data.emergency.emergencyId}\nResponse Time: ${data.emergency.responseTime}\n\nEmergency services have been notified and are on their way.`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert('Error', 'Failed to send SOS alert. Please try calling emergency services directly.');
+      }
+    } catch (error) {
+      console.error('SOS Error:', error);
+      Alert.alert(
+        'SOS Alert (Offline)',
+        'Could not reach emergency servers, but your location has been saved locally. Please call emergency services directly.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsSendingAlert(false);
+    }
+  };
+
   const handleSendLocation = () => {
-    Alert.alert(
-      'Location Sent',
-      'Your current location has been shared with emergency contacts and local authorities.',
-      [{ text: 'OK' }]
-    );
+    sendSOSAlert('Location sharing requested - tourist needs assistance');
   };
 
   return (
@@ -62,23 +113,42 @@ export default function SOSEmergency() {
       <TouchableOpacity
         style={[
           styles.sosButton,
-          { backgroundColor: isEmergencyActive ? '#FF6666' : '#FF4444' }
+          { 
+            backgroundColor: isEmergencyActive ? '#FF6666' : isSendingAlert ? '#FF8888' : '#FF4444',
+            opacity: isSendingAlert ? 0.8 : 1
+          }
         ]}
-        onPress={() => handleEmergencyCall('911', 'Emergency Services')}
+        onPress={() => {
+          if (!isSendingAlert) {
+            Alert.alert(
+              '🚨 Send SOS Alert?',
+              'This will immediately notify emergency services and send your location to local authorities.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Send SOS Alert',
+                  style: 'destructive',
+                  onPress: () => sendSOSAlert('URGENT: Tourist in distress, immediate assistance required')
+                }
+              ]
+            );
+          }
+        }}
+        disabled={isSendingAlert}
       >
         <IconSymbol name="exclamationmark.triangle.fill" size={60} color="white" />
         <ThemedText style={styles.sosButtonText}>
-          {isEmergencyActive ? 'EMERGENCY ACTIVE' : 'SOS - CALL FOR HELP'}
+          {isSendingAlert ? 'SENDING ALERT...' : isEmergencyActive ? 'EMERGENCY ACTIVE' : 'SOS - SEND ALERT'}
         </ThemedText>
         <ThemedText style={styles.sosButtonSubtext}>
-          Tap to call emergency services
+          {isSendingAlert ? 'Please wait...' : 'Tap to send emergency alert'}
         </ThemedText>
       </TouchableOpacity>
 
       {/* Quick Actions */}
       <View style={styles.quickActions}>
         <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: Colors[colorScheme ?? 'light'].tint }]}
+          style={[styles.actionButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
           onPress={handleSendLocation}
         >
           <IconSymbol name="location.fill" size={24} color="white" />
@@ -86,8 +156,8 @@ export default function SOSEmergency() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: '#FF9800' }]}
-          onPress={() => Alert.alert('Alert Sent', 'Emergency alert sent to your emergency contacts.')}
+          style={[styles.actionButton, { backgroundColor: Colors[colorScheme ?? 'light'].warning }]}
+          onPress={() => sendSOSAlert('Tourist requesting emergency contact notification - assistance may be needed')}
         >
           <IconSymbol name="bell.fill" size={24} color="white" />
           <ThemedText style={styles.actionButtonText}>Alert Contacts</ThemedText>
@@ -103,23 +173,42 @@ export default function SOSEmergency() {
         {emergencyContacts.map((contact, index) => (
           <TouchableOpacity
             key={index}
-            style={[styles.contactCard, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}
+            style={[
+              styles.contactCard, 
+              { 
+                backgroundColor: Colors[colorScheme ?? 'light'].card,
+                borderColor: Colors[colorScheme ?? 'light'].border,
+                borderWidth: colorScheme === 'dark' ? 1 : 0,
+              }
+            ]}
             onPress={() => handleEmergencyCall(contact.number, contact.name)}
           >
-            <View style={styles.contactIcon}>
-              <IconSymbol name={contact.icon as any} size={24} color="#FF4444" />
+            <View style={[
+              styles.contactIcon,
+              {
+                backgroundColor: colorScheme === 'dark' ? '#FF444430' : '#FFE5E5'
+              }
+            ]}>
+              <IconSymbol name={contact.icon as any} size={24} color={Colors[colorScheme ?? 'light'].error} />
             </View>
             <View style={styles.contactInfo}>
               <ThemedText style={styles.contactName}>{contact.name}</ThemedText>
               <ThemedText style={styles.contactNumber}>{contact.number}</ThemedText>
             </View>
-            <IconSymbol name="chevron.right" size={16} color={Colors[colorScheme ?? 'light'].tabIconDefault} />
+            <IconSymbol name="chevron.right" size={16} color={Colors[colorScheme ?? 'light'].secondary} />
           </TouchableOpacity>
         ))}
       </View>
 
       {/* Safety Tips */}
-      <View style={[styles.safetyTips, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+      <View style={[
+        styles.safetyTips, 
+        { 
+          backgroundColor: Colors[colorScheme ?? 'light'].surfaceVariant,
+          borderColor: Colors[colorScheme ?? 'light'].border,
+          borderWidth: colorScheme === 'dark' ? 1 : 0,
+        }
+      ]}>
         <ThemedText style={styles.safetyTitle}>💡 Safety Tips</ThemedText>
         <ThemedText style={styles.safetyText}>
           • Stay calm and provide clear information

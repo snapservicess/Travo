@@ -6,7 +6,7 @@
 import { Platform } from 'react-native';
 
 const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+const tintColorDark = '#4FC3F7';
 
 export const Colors = {
   light: {
@@ -16,14 +16,38 @@ export const Colors = {
     icon: '#687076',
     tabIconDefault: '#687076',
     tabIconSelected: tintColorLight,
+    // Enhanced colors for better component styling
+    card: '#fff',
+    border: '#E5E7EB',
+    primary: '#0a7ea4',
+    secondary: '#6B7280',
+    success: '#10B981',
+    warning: '#F59E0B',
+    error: '#EF4444',
+    surface: '#F9FAFB',
+    surfaceVariant: '#F3F4F6',
+    onSurface: '#374151',
+    shadow: 'rgba(0, 0, 0, 0.1)',
   },
   dark: {
     text: '#ECEDEE',
-    background: '#151718',
+    background: '#0F172A', // Darker, more professional background
     tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
+    icon: '#94A3B8',
+    tabIconDefault: '#64748B',
     tabIconSelected: tintColorDark,
+    // Enhanced dark mode colors
+    card: '#1E293B', // Darker cards for better contrast
+    border: '#334155',
+    primary: '#4FC3F7',
+    secondary: '#94A3B8',
+    success: '#34D399',
+    warning: '#FBBF24',
+    error: '#F87171',
+    surface: '#1E293B', // Dark surface for cards
+    surfaceVariant: '#334155', // Slightly lighter for variants
+    onSurface: '#E2E8F0', // Text on dark surfaces
+    shadow: 'rgba(0, 0, 0, 0.3)',
   },
 };
 

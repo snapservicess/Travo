@@ -112,13 +112,27 @@ export default function MainDashboard() {
 
         {/* Quick Stats */}
         <View style={styles.statsContainer}>
-          <View style={[styles.statCard, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-            <IconSymbol name="shield.checkered" size={24} color="#4CAF50" />
+          <View style={[
+            styles.statCard, 
+            { 
+              backgroundColor: Colors[colorScheme ?? 'light'].card,
+              borderColor: Colors[colorScheme ?? 'light'].border,
+              borderWidth: colorScheme === 'dark' ? 1 : 0,
+            }
+          ]}>
+            <IconSymbol name="shield.checkered" size={24} color={Colors[colorScheme ?? 'light'].success} />
             <ThemedText style={styles.statNumber}>85%</ThemedText>
             <ThemedText style={styles.statLabel}>Safety Score</ThemedText>
           </View>
-          <View style={[styles.statCard, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-            <IconSymbol name="location.fill" size={24} color="#2196F3" />
+          <View style={[
+            styles.statCard, 
+            { 
+              backgroundColor: Colors[colorScheme ?? 'light'].card,
+              borderColor: Colors[colorScheme ?? 'light'].border,
+              borderWidth: colorScheme === 'dark' ? 1 : 0,
+            }
+          ]}>
+            <IconSymbol name="location.fill" size={24} color={Colors[colorScheme ?? 'light'].primary} />
             <ThemedText style={styles.statNumber}>3</ThemedText>
             <ThemedText style={styles.statLabel}>Maps Downloaded</ThemedText>
           </View>
@@ -135,12 +149,23 @@ export default function MainDashboard() {
               key={feature.id}
               style={[
                 styles.featureCard,
-                { backgroundColor: Colors[colorScheme ?? 'light'].background },
+                { 
+                  backgroundColor: Colors[colorScheme ?? 'light'].card,
+                  borderColor: Colors[colorScheme ?? 'light'].border,
+                  borderWidth: colorScheme === 'dark' ? 1 : 0,
+                },
                 index % 2 === 0 ? styles.featureCardLeft : styles.featureCardRight
               ]}
               onPress={() => handleFeaturePress(feature.id)}
             >
-              <View style={[styles.featureIcon, { backgroundColor: feature.color + '20' }]}>
+              <View style={[
+                styles.featureIcon, 
+                { 
+                  backgroundColor: colorScheme === 'dark' 
+                    ? feature.color + '30' 
+                    : feature.color + '20' 
+                }
+              ]}>
                 <IconSymbol name={feature.icon as any} size={28} color={feature.color} />
               </View>
               <ThemedText style={styles.featureTitle}>{feature.title}</ThemedText>

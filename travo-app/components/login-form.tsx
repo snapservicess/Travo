@@ -7,28 +7,39 @@ import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginForm() {
-  const [touristId, setTouristId] = useState('');
-  const [password, setPassword] = useState('');
+  const [touristId, setTouristId] = useState('T12345'); // Pre-fill with demo data
+  const [password, setPassword] = useState('password123'); // Pre-fill with demo data
   const colorScheme = useColorScheme();
-  const { login } = useAuth();
+  const { login, loading } = useAuth();
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!touristId.trim() || !password.trim()) {
       Alert.alert('Error', 'Please enter both Tourist ID and Password');
       return;
     }
     
-    const success = login(touristId, password);
-    if (success) {
-      Alert.alert('Success', `Welcome to Travo, ${touristId}!`);
-    } else {
-      Alert.alert('Error', 'Invalid credentials');
+    try {
+      const success = await login(touristId, password);
+      if (success) {
+        Alert.alert('Success', `Welcome to Travo, ${touristId}!`);
+      } else {
+        Alert.alert('Error', 'Invalid credentials. Please try again.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Login failed. Please check your connection and try again.');
     }
   };
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedView style={styles.formContainer}>
+      <ThemedView style={[
+        styles.formContainer,
+        {
+          backgroundColor: Colors[colorScheme ?? 'light'].card,
+          borderColor: Colors[colorScheme ?? 'light'].border,
+          borderWidth: colorScheme === 'dark' ? 1 : 0,
+        }
+      ]}>
         <ThemedText type="title" style={styles.title}>
           Welcome to Travo
         </ThemedText>
@@ -42,15 +53,15 @@ export default function LoginForm() {
             style={[
               styles.input,
               { 
-                backgroundColor: Colors[colorScheme ?? 'light'].background,
-                borderColor: Colors[colorScheme ?? 'light'].tabIconDefault,
+                backgroundColor: Colors[colorScheme ?? 'light'].surface,
+                borderColor: Colors[colorScheme ?? 'light'].border,
                 color: Colors[colorScheme ?? 'light'].text,
               }
             ]}
             value={touristId}
             onChangeText={setTouristId}
             placeholder="Enter your Tourist ID"
-            placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
+            placeholderTextColor={Colors[colorScheme ?? 'light'].secondary}
             autoCapitalize="none"
           />
         </View>
@@ -61,15 +72,15 @@ export default function LoginForm() {
             style={[
               styles.input,
               { 
-                backgroundColor: Colors[colorScheme ?? 'light'].background,
-                borderColor: Colors[colorScheme ?? 'light'].tabIconDefault,
+                backgroundColor: Colors[colorScheme ?? 'light'].surface,
+                borderColor: Colors[colorScheme ?? 'light'].border,
                 color: Colors[colorScheme ?? 'light'].text,
               }
             ]}
             value={password}
             onChangeText={setPassword}
             placeholder="Enter your password"
-            placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
+            placeholderTextColor={Colors[colorScheme ?? 'light'].secondary}
             secureTextEntry
             autoCapitalize="none"
           />
@@ -78,14 +89,31 @@ export default function LoginForm() {
         <TouchableOpacity
           style={[
             styles.loginButton,
-            { backgroundColor: Colors[colorScheme ?? 'light'].tint }
+            { 
+              backgroundColor: loading 
+                ? Colors[colorScheme ?? 'light'].secondary 
+                : Colors[colorScheme ?? 'light'].primary 
+            }
           ]}
           onPress={handleLogin}
+          disabled={loading}
         >
           <ThemedText style={styles.loginButtonText}>
-            Login
+            {loading ? 'Logging in...' : 'Login'}
           </ThemedText>
         </TouchableOpacity>
+
+        <ThemedView style={[
+          styles.demoInfoContainer,
+          {
+            backgroundColor: Colors[colorScheme ?? 'light'].surfaceVariant,
+            borderColor: Colors[colorScheme ?? 'light'].border,
+          }
+        ]}>
+          <ThemedText style={styles.demoInfo}>
+            💡 Demo credentials: T12345 / password123
+          </ThemedText>
+        </ThemedView>
       </ThemedView>
     </ThemedView>
   );
@@ -141,5 +169,17 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  demoInfoContainer: {
+    marginTop: 20,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  demoInfo: {
+    textAlign: 'center',
+    fontSize: 12,
+    opacity: 0.8,
+    fontStyle: 'italic',
   },
 });

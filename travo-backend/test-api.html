@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Travo API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        .result { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 4px; white-space: pre-wrap; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        input { padding: 5px; margin: 5px; width: 200px; }
+    </style>
+</head>
+<body>
+    <h1>🛡️ Travo API Test Dashboard</h1>
+    
+    <div class="test-section">
+        <h2>1. Health Check</h2>
+        <button onclick="testHealth()">Test Health Endpoint</button>
+        <div id="healthResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Tourist Authentication</h2>
+        <div>
+            <input type="text" id="touristId" placeholder="Tourist ID" value="T12345">
+            <input type="password" id="password" placeholder="Password" value="password123">
+            <button onclick="testLogin()">Login</button>
+        </div>
+        <div id="loginResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Emergency SOS Test</h2>
+        <div>
+            <input type="text" id="emergencyLocation" placeholder="Location" value="Times Square, NY">
+            <input type="text" id="emergencyMessage" placeholder="Emergency Message" value="Need immediate help">
+            <button onclick="testSOS()" id="sosBtn" disabled>Send SOS (Login First)</button>
+        </div>
+        <div id="sosResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Notification System Test</h2>
+        <div>
+            <input type="text" id="testEmail" placeholder="Test Email" value="test@example.com">
+            <input type="text" id="testPhone" placeholder="Test Phone" value="+1234567890">
+            <button onclick="testNotification()" id="notificationBtn" disabled>Test Notification (Admin Only)</button>
+        </div>
+        <div id="notificationResult" class="result"></div>
+    </div>
+
+    <script>
+        let userToken = null;
+        const API_BASE = 'http://localhost:3001/api';
+
+        async function testHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                document.getElementById('healthResult').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('healthResult').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function testLogin() {
+            try {
+                const touristId = document.getElementById('touristId').value;
+                const password = document.getElementById('password').value;
+                
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ touristId, password })
+                });
+                
+                const data = await response.json();
+                document.getElementById('loginResult').textContent = JSON.stringify(data, null, 2);
+                
+                if (data.success && data.tokens) {
+                    userToken = data.tokens.accessToken;
+                    document.getElementById('sosBtn').disabled = false;
+                    document.getElementById('sosBtn').textContent = 'Send SOS';
+                }
+            } catch (error) {
+                document.getElementById('loginResult').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function testSOS() {
+            if (!userToken) {
+                alert('Please login first');
+                return;
+            }
+            
+            try {
+                const location = document.getElementById('emergencyLocation').value;
+                const message = document.getElementById('emergencyMessage').value;
+                
+                const response = await fetch(`${API_BASE}/emergency/sos`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${userToken}`
+                    },
+                    body: JSON.stringify({
+                        location,
+                        message,
+                        severity: 'high',
+                        coordinates: { latitude: 40.7580, longitude: -73.9855 }
+                    })
+                });
+                
+                const data = await response.json();
+                document.getElementById('sosResult').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('sosResult').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function testNotification() {
+            // For demo purposes - in real app, admin would be logged in
+            try {
+                const email = document.getElementById('testEmail').value;
+                const phone = document.getElementById('testPhone').value;
+                
+                // This is a demo test - normally would need admin authentication
+                const testData = {
+                    email,
+                    phone,
+                    type: 'checkIn'
+                };
+                
+                document.getElementById('notificationResult').textContent = 
+                    '📧 Demo notification would be sent to: ' + email + 
+                    '\\n📱 SMS would be sent to: ' + phone +
+                    '\\n\\nNote: This is demo mode. In production, admin authentication required.';
+            } catch (error) {
+                document.getElementById('notificationResult').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        // Auto-test health on page load
+        document.addEventListener('DOMContentLoaded', testHealth);
+    </script>
+</body>
+</html>

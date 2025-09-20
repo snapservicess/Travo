@@ -93,7 +93,14 @@ export default function SafetyScoreDashboard() {
         </View>
 
         {/* Main Safety Score */}
-        <View style={[styles.scoreCard, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+        <View style={[
+          styles.scoreCard, 
+          { 
+            backgroundColor: Colors[colorScheme ?? 'light'].card,
+            borderColor: Colors[colorScheme ?? 'light'].border,
+            borderWidth: colorScheme === 'dark' ? 1 : 0,
+          }
+        ]}>
           <View style={styles.scoreHeader}>
             <View>
               <ThemedText style={styles.scoreLabel}>Overall Safety Score</ThemedText>
@@ -130,7 +137,11 @@ export default function SafetyScoreDashboard() {
               key={period}
               style={[
                 styles.periodButton,
-                selectedPeriod === period && { backgroundColor: Colors[colorScheme ?? 'light'].tint }
+                {
+                  backgroundColor: selectedPeriod === period 
+                    ? Colors[colorScheme ?? 'light'].primary 
+                    : Colors[colorScheme ?? 'light'].surface
+                }
               ]}
               onPress={() => setSelectedPeriod(period)}
             >
@@ -155,23 +166,31 @@ export default function SafetyScoreDashboard() {
               key={index}
               style={[
                 styles.metricCard,
-                { backgroundColor: Colors[colorScheme ?? 'light'].background }
+                { 
+                  backgroundColor: Colors[colorScheme ?? 'light'].card,
+                  borderColor: Colors[colorScheme ?? 'light'].border,
+                  borderWidth: colorScheme === 'dark' ? 1 : 0,
+                }
               ]}
             >
               <View style={styles.metricHeader}>
-                <IconSymbol name={metric.icon as any} size={24} color={Colors[colorScheme ?? 'light'].tint} />
+                <IconSymbol name={metric.icon as any} size={24} color={Colors[colorScheme ?? 'light'].primary} />
                 <View style={[
                   styles.trendBadge,
-                  { backgroundColor: metric.trendUp ? '#E8F5E8' : '#FFE8E8' }
+                  { 
+                    backgroundColor: metric.trendUp 
+                      ? (colorScheme === 'dark' ? '#10B98130' : '#E8F5E8')
+                      : (colorScheme === 'dark' ? '#EF444430' : '#FFE8E8')
+                  }
                 ]}>
                   <IconSymbol 
                     name={metric.trendUp ? 'arrow.up' : 'arrow.down'} 
                     size={12} 
-                    color={metric.trendUp ? '#4CAF50' : '#FF4444'} 
+                    color={metric.trendUp ? Colors[colorScheme ?? 'light'].success : Colors[colorScheme ?? 'light'].error} 
                   />
                   <ThemedText style={[
                     styles.trendText,
-                    { color: metric.trendUp ? '#4CAF50' : '#FF4444' }
+                    { color: metric.trendUp ? Colors[colorScheme ?? 'light'].success : Colors[colorScheme ?? 'light'].error }
                   ]}>
                     {metric.trend}
                   </ThemedText>
@@ -207,13 +226,21 @@ export default function SafetyScoreDashboard() {
               key={index}
               style={[
                 styles.recommendationCard,
-                { backgroundColor: Colors[colorScheme ?? 'light'].background }
+                { 
+                  backgroundColor: Colors[colorScheme ?? 'light'].card,
+                  borderColor: Colors[colorScheme ?? 'light'].border,
+                  borderWidth: colorScheme === 'dark' ? 1 : 0,
+                }
               ]}
             >
               <View style={styles.recommendationHeader}>
                 <View style={[
                   styles.recommendationIcon,
-                  { backgroundColor: getPriorityColor(rec.priority) + '20' }
+                  { 
+                    backgroundColor: colorScheme === 'dark' 
+                      ? getPriorityColor(rec.priority) + '30'
+                      : getPriorityColor(rec.priority) + '20'
+                  }
                 ]}>
                   <IconSymbol 
                     name={rec.icon as any} 

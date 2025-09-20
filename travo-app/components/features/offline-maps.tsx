@@ -5,11 +5,9 @@ import { ThemedView } from '../themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { IconSymbol } from '../ui/icon-symbol';
-import { useNavigation } from '@/contexts/NavigationContext';
 
 export default function OfflineMaps() {
   const colorScheme = useColorScheme();
-  const { goBack } = useNavigation();
   const [downloadedMaps, setDownloadedMaps] = useState([
     { id: 1, name: 'Shillong & Cherrapunji ', size: '45 MB', downloaded: true, lastUpdated: '2 days ago' },
     { id: 2, name: 'Kaziranga National Park', size: '38 MB', downloaded: true, lastUpdated: '1 week ago' },
@@ -81,7 +79,13 @@ export default function OfflineMaps() {
         </View>
 
         {/* Storage Summary */}
-        <View style={[styles.storageCard, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+        <View style={[
+          styles.storageCard, 
+          { 
+            backgroundColor: Colors[colorScheme ?? 'light'].card,
+            borderColor: Colors[colorScheme ?? 'light'].border,
+          }
+        ]}>
           <View style={styles.storageHeader}>
             <IconSymbol name="internaldrive.fill" size={24} color={Colors[colorScheme ?? 'light'].tint} />
             <ThemedText style={styles.storageTitle}>Storage Usage</ThemedText>
@@ -90,7 +94,10 @@ export default function OfflineMaps() {
             <ThemedText style={styles.storageUsed}>{totalStorage} MB used</ThemedText>
             <ThemedText style={styles.storageTotal}>of 2 GB available</ThemedText>
           </View>
-          <View style={styles.storageBar}>
+          <View style={[
+            styles.storageBar,
+            { backgroundColor: Colors[colorScheme ?? 'light'].border }
+          ]}>
             <View 
               style={[
                 styles.storageProgress,
@@ -109,7 +116,13 @@ export default function OfflineMaps() {
         </ThemedText>
 
         {downloadedMaps.length === 0 ? (
-          <View style={[styles.emptyState, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+          <View style={[
+            styles.emptyState, 
+            { 
+              backgroundColor: Colors[colorScheme ?? 'light'].card,
+              borderColor: Colors[colorScheme ?? 'light'].border,
+            }
+          ]}>
             <IconSymbol name="map" size={48} color={Colors[colorScheme ?? 'light'].tabIconDefault} />
             <ThemedText style={styles.emptyStateText}>No downloaded maps</ThemedText>
             <ThemedText style={styles.emptyStateSubtext}>
@@ -121,11 +134,20 @@ export default function OfflineMaps() {
             {downloadedMaps.map((map) => (
               <View
                 key={map.id}
-                style={[styles.mapCard, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}
+                style={[
+                  styles.mapCard, 
+                  { 
+                    backgroundColor: Colors[colorScheme ?? 'light'].card,
+                    borderColor: Colors[colorScheme ?? 'light'].border,
+                  }
+                ]}
               >
                 <View style={styles.mapInfo}>
-                  <View style={[styles.mapIcon, { backgroundColor: '#4CAF50' + '20' }]}>
-                    <IconSymbol name="map.fill" size={20} color="#4CAF50" />
+                  <View style={[
+                    styles.mapIcon, 
+                    { backgroundColor: Colors[colorScheme ?? 'light'].success + '20' }
+                  ]}>
+                    <IconSymbol name="map.fill" size={20} color={Colors[colorScheme ?? 'light'].success} />
                   </View>
                   <View style={styles.mapDetails}>
                     <ThemedText style={styles.mapName}>{map.name}</ThemedText>
@@ -136,16 +158,22 @@ export default function OfflineMaps() {
                 </View>
                 <View style={styles.mapActions}>
                   <TouchableOpacity
-                    style={styles.actionButton}
+                    style={[
+                      styles.actionButton,
+                      { backgroundColor: Colors[colorScheme ?? 'light'].surface }
+                    ]}
                     onPress={() => handleUpdateMap(map.id, map.name)}
                   >
                     <IconSymbol name="arrow.clockwise" size={18} color={Colors[colorScheme ?? 'light'].tint} />
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.actionButton}
+                    style={[
+                      styles.actionButton,
+                      { backgroundColor: Colors[colorScheme ?? 'light'].surface }
+                    ]}
                     onPress={() => handleDeleteMap(map.id, map.name)}
                   >
-                    <IconSymbol name="trash" size={18} color="#FF4444" />
+                    <IconSymbol name="trash" size={18} color={Colors[colorScheme ?? 'light'].error} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -162,17 +190,29 @@ export default function OfflineMaps() {
           {availableMaps.map((map) => (
             <View
               key={map.id}
-              style={[styles.mapCard, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}
+              style={[
+                styles.mapCard, 
+                { 
+                  backgroundColor: Colors[colorScheme ?? 'light'].card,
+                  borderColor: Colors[colorScheme ?? 'light'].border,
+                }
+              ]}
             >
               <View style={styles.mapInfo}>
-                <View style={[styles.mapIcon, { backgroundColor: Colors[colorScheme ?? 'light'].tint + '20' }]}>
-                  <IconSymbol name="map" size={20} color={Colors[colorScheme ?? 'light'].tint} />
+                <View style={[
+                  styles.mapIcon, 
+                  { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }
+                ]}>
+                  <IconSymbol name="map" size={20} color={Colors[colorScheme ?? 'light'].primary} />
                 </View>
                 <View style={styles.mapDetails}>
                   <View style={styles.mapNameRow}>
                     <ThemedText style={styles.mapName}>{map.name}</ThemedText>
                     {map.popular && (
-                      <View style={styles.popularBadge}>
+                      <View style={[
+                        styles.popularBadge,
+                        { backgroundColor: Colors[colorScheme ?? 'light'].warning }
+                      ]}>
                         <ThemedText style={styles.popularText}>Popular</ThemedText>
                       </View>
                     )}
@@ -183,7 +223,10 @@ export default function OfflineMaps() {
                 </View>
               </View>
               <TouchableOpacity
-                style={[styles.downloadButton, { backgroundColor: Colors[colorScheme ?? 'light'].tint }]}
+                style={[
+                  styles.downloadButton, 
+                  { backgroundColor: Colors[colorScheme ?? 'light'].primary }
+                ]}
                 onPress={() => handleDownloadMap(map.id, map.name, map.size)}
               >
                 <IconSymbol name="arrow.down.circle.fill" size={18} color="white" />
@@ -194,7 +237,13 @@ export default function OfflineMaps() {
         </View>
 
         {/* Tips */}
-        <View style={[styles.tipsCard, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+        <View style={[
+          styles.tipsCard, 
+          { 
+            backgroundColor: Colors[colorScheme ?? 'light'].card,
+            borderColor: Colors[colorScheme ?? 'light'].border,
+          }
+        ]}>
           <ThemedText style={styles.tipsTitle}>💡 Tips for Offline Maps</ThemedText>
           <ThemedText style={styles.tipText}>
             • Download maps on Wi-Fi to save mobile data
@@ -254,6 +303,7 @@ const styles = StyleSheet.create({
   storageCard: {
     padding: 20,
     borderRadius: 12,
+    borderWidth: 1,
     marginBottom: 25,
     elevation: 2,
     shadowColor: '#000',
@@ -287,7 +337,6 @@ const styles = StyleSheet.create({
   },
   storageBar: {
     height: 6,
-    backgroundColor: '#E0E0E0',
     borderRadius: 3,
   },
   storageProgress: {
@@ -301,6 +350,7 @@ const styles = StyleSheet.create({
   emptyState: {
     padding: 40,
     borderRadius: 12,
+    borderWidth: 1,
     alignItems: 'center',
     marginBottom: 25,
     elevation: 2,
@@ -329,6 +379,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderRadius: 12,
+    borderWidth: 1,
     marginBottom: 12,
     elevation: 2,
     shadowColor: '#000',
@@ -363,7 +414,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   popularBadge: {
-    backgroundColor: '#FF9800',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -387,7 +437,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F0F0F0',
   },
   downloadButton: {
     flexDirection: 'row',
@@ -405,6 +454,7 @@ const styles = StyleSheet.create({
   tipsCard: {
     padding: 20,
     borderRadius: 12,
+    borderWidth: 1,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
