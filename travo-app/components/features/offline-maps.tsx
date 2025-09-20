@@ -11,16 +11,16 @@ export default function OfflineMaps() {
   const colorScheme = useColorScheme();
   const { goBack } = useNavigation();
   const [downloadedMaps, setDownloadedMaps] = useState([
-    { id: 1, name: 'Paris City Center', size: '45 MB', downloaded: true, lastUpdated: '2 days ago' },
-    { id: 2, name: 'Rome Historical District', size: '38 MB', downloaded: true, lastUpdated: '1 week ago' },
+    { id: 1, name: 'Shillong & Cherrapunji ', size: '45 MB', downloaded: true, lastUpdated: '2 days ago' },
+    { id: 2, name: 'Kaziranga National Park', size: '38 MB', downloaded: true, lastUpdated: '1 week ago' },
   ]);
 
   const availableMaps = [
-    { id: 3, name: 'Barcelona Metro Area', size: '67 MB', region: 'Spain', popular: true },
-    { id: 4, name: 'Tokyo Central Districts', size: '89 MB', region: 'Japan', popular: true },
-    { id: 5, name: 'London City & Suburbs', size: '78 MB', region: 'UK', popular: false },
-    { id: 6, name: 'Amsterdam Complete', size: '42 MB', region: 'Netherlands', popular: false },
-    { id: 7, name: 'New York Manhattan', size: '95 MB', region: 'USA', popular: true },
+    { id: 3, name: 'Gangtok & Tsomgo Lake', size: '67 MB', region: 'Sikkim', popular: true },
+    { id: 4, name: 'Tawang Region', size: '89 MB', region: 'Arunachal Pradesh', popular: true },
+    { id: 5, name: 'Majuli Island', size: '78 MB', region: 'Assam', popular: false },
+    { id: 6, name: 'Imphal & Loktak Lake', size: '42 MB', region: 'Manipur', popular: false },
+    { id: 7, name: 'Ziro Valley', size: '95 MB', region: 'Arunachal Pradesh', popular: true },
   ];
 
   const handleDownloadMap = (mapId: number, mapName: string, size: string) => {
