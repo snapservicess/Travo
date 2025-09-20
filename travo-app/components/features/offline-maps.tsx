@@ -70,12 +70,6 @@ export default function OfflineMaps() {
   return (
     <ThemedView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Back Button */}
-        <TouchableOpacity onPress={goBack} style={styles.backButton}>
-          <IconSymbol name="house.fill" size={20} color="white" />
-          <ThemedText style={styles.backText}>Home</ThemedText>
-        </TouchableOpacity>
-
         {/* Header */}
         <View style={styles.header}>
           <ThemedText type="title" style={styles.title}>

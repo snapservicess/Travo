@@ -47,12 +47,6 @@ export default function SOSEmergency() {
 
   return (
     <ThemedView style={styles.container}>
-      {/* Back Button */}
-      <TouchableOpacity onPress={goBack} style={styles.backButton}>
-        <IconSymbol name="house.fill" size={20} color="white" />
-        <ThemedText style={styles.backText}>Home</ThemedText>
-      </TouchableOpacity>
-
       {/* Emergency Header */}
       <View style={styles.header}>
         <IconSymbol name="exclamationmark.triangle.fill" size={40} color="#FF4444" />

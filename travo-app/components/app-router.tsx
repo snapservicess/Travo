@@ -4,6 +4,7 @@ import { ThemedText } from './themed-text';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { IconSymbol } from './ui/icon-symbol';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@/contexts/NavigationContext';
 import MainDashboard from './main-dashboard';
 import SOSEmergency from './features/sos-emergency';
@@ -11,7 +12,7 @@ import SafetyScoreDashboard from './features/safety-score-dashboard';
 import OfflineMaps from './features/offline-maps';
 
 export default function AppRouter() {
-  const { currentScreen } = useNavigation();
+  const { currentScreen, navigateTo } = useNavigation();
   const colorScheme = useColorScheme();
 
   const getScreenTitle = () => {
@@ -56,8 +57,10 @@ export default function AppRouter() {
   return (
     <View style={styles.container}>
       {currentScreen !== 'dashboard' && (
-        <View style={[styles.header, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-          <View style={styles.headerSpacer} />
+        <View style={[styles.header, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}> 
+          <TouchableOpacity onPress={() => navigateTo('dashboard')} style={styles.headerBackButton} accessibilityLabel="Back to Dashboard">
+            <MaterialIcons name="chevron-left" size={24} color="#000" />
+          </TouchableOpacity>
           <ThemedText style={styles.headerTitle}>{getScreenTitle()}</ThemedText>
           <View style={styles.headerSpacer} />
         </View>
@@ -69,17 +72,9 @@ export default function AppRouter() {
 
 function PlaceholderScreen({ title }: { title: string }) {
   const colorScheme = useColorScheme();
-  const { goBack } = useNavigation();
-  
   return (
     <View style={styles.container}>
       <View style={styles.placeholderContainer}>
-        {/* Back Button */}
-        <TouchableOpacity onPress={goBack} style={styles.placeholderBackButton}>
-          <IconSymbol name="house.fill" size={20} color="white" />
-          <ThemedText style={styles.placeholderBackText}>Home</ThemedText>
-        </TouchableOpacity>
-
         <View style={[styles.placeholder, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
           <IconSymbol name="gear" size={48} color={Colors[colorScheme ?? 'light'].tabIconDefault} />
           <ThemedText style={styles.placeholderTitle}>{title}</ThemedText>
@@ -113,6 +108,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
+  headerBackButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
   backButton: {
     padding: 8,
     marginRight: 8,
@@ -139,27 +141,6 @@ const styles = StyleSheet.create({
   placeholderContainer: {
     flex: 1,
     padding: 20,
-  },
-  placeholderBackButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginBottom: 20,
-    backgroundColor: '#007AFF',
-    borderRadius: 25,
-    alignSelf: 'flex-start',
-    gap: 8,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-  },
-  placeholderBackText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
   },
   placeholder: {
     flex: 1,
