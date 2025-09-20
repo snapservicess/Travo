@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, ScrollView, TouchableOpacity, Dimensions, Image } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -10,72 +10,70 @@ import { IconSymbol } from './ui/icon-symbol';
 
 const { width } = Dimensions.get('window');
 
-const travelTools: {
-  title: string;
-  description: string;
-  color: string; // Background color for the icon container
-  iconColor?: string; // Color for the icon symbol
-  screen: Screen;
-  iconName?: React.ComponentProps<typeof IconSymbol>['name'];
-  image?: any;
-}[] = [
-  {
-    title: 'Safety Score',
-    description: 'Check your safety',
-    color: '#D4EFDF',
-    screen: 'safety-score',
-    image: require('../assets/images/profile-icon.png'),
-  },
-  {
-    title: 'Offline Maps',
-    description: 'Download maps',
-    color: '#D6EAF8',
-    iconColor: '#2980B9',
-    screen: 'offline-maps',
-    iconName: 'map.fill',
-  },
-  {
-    title: 'Events & Festivals',
-    description: 'Local activities',
-    color: '#FDEBD0',
-    screen: 'events-festivals',
-    iconName: 'calendar.badge.plus',
-  },
-  {
-    title: 'Language Help',
-    description: 'Translation & community',
-    color: '#E8F8F5',
-    screen: 'language-help',
-    iconName: 'bubble.left.and.bubble.right.fill',
-  },
-  {
-    title: 'Transport & Stay',
-    description: 'Verified options',
-    color: '#D1E8FF',
-    iconColor: '#007BFF',
-    screen: 'transport-stay',
-    iconName: 'car.fill',
-  },
-  {
-    title: 'Weather & Terrain',
-    description: 'Current conditions',
-    color: '#E8DAEF',
-    screen: 'weather-terrain',
-    iconName: 'cloud.sun.fill',
-  },
-  {
-    title: 'Eco Tourism Tips',
-    description: 'Responsible travel',
-    color: '#D5E8D4',
-    screen: 'eco-tourism-tips',
-    iconName: 'leaf.fill',
-  },
-];
-
 export default function MainDashboard() {
   const colorScheme = useColorScheme();
   const { touristId, logout } = useAuth();
   const { navigateTo } = useNavigation();
+
+  const features = [
+    {
+      id: 'sos',
+      title: 'SOS Emergency',
+      subtitle: 'Quick help access',
+      icon: 'exclamationmark.triangle.fill',
+      color: '#FF4444',
+      urgent: true
+    },
+    {
+      id: 'safety',
+      title: 'Safety Score',
+      subtitle: 'Check your safety',
+      icon: 'shield.checkered',
+      color: '#4CAF50',
+    },
+    {
+      id: 'map',
+      title: 'Offline Maps',
+      subtitle: 'Download maps',
+      icon: 'map.fill',
+      color: '#2196F3',
+    },
+    {
+      id: 'events',
+      title: 'Events & Festivals',
+      subtitle: 'Local activities',
+      icon: 'calendar.badge.plus',
+      color: '#FF9800',
+    },
+    {
+      id: 'language',
+      title: 'Language Help',
+      subtitle: 'Translation & community',
+      icon: 'bubble.left.and.bubble.right.fill',
+      color: '#9C27B0',
+    },
+    {
+      id: 'transport',
+      title: 'Transport & Stay',
+      subtitle: 'Verified options',
+      icon: 'car.fill',
+      color: '#607D8B',
+    },
+    {
+      id: 'weather',
+      title: 'Weather & Terrain',
+      subtitle: 'Current conditions',
+      icon: 'cloud.sun.fill',
+      color: '#00BCD4',
+    },
+    {
+      id: 'eco',
+      title: 'Eco Tourism Tips',
+      subtitle: 'Responsible travel',
+      icon: 'leaf.fill',
+      color: '#4CAF50',
+    }
+  ];
 
   const handleFeaturePress = (featureId: string) => {
     navigateTo(featureId as any);
@@ -115,7 +113,7 @@ export default function MainDashboard() {
         {/* Quick Stats */}
         <View style={styles.statsContainer}>
           <View style={[styles.statCard, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-            <IconSymbol name="shield.checkmark.fill" size={24} color="#4CAF50" />
+            <IconSymbol name="shield.checkered" size={24} color="#4CAF50" />
             <ThemedText style={styles.statNumber}>85%</ThemedText>
             <ThemedText style={styles.statLabel}>Safety Score</ThemedText>
           </View>
@@ -131,22 +129,22 @@ export default function MainDashboard() {
           Travel Tools
         </ThemedText>
         
-        <View style={styles.toolsGrid}>
-          {travelTools.map((tool) => (
+        <View style={styles.featuresGrid}>
+          {features.filter(f => f.id !== 'sos').map((feature, index) => (
             <TouchableOpacity
-              key={tool.title}
-              style={[styles.toolCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
-              onPress={() => navigate(tool.screen)}
+              key={feature.id}
+              style={[
+                styles.featureCard,
+                { backgroundColor: Colors[colorScheme ?? 'light'].background },
+                index % 2 === 0 ? styles.featureCardLeft : styles.featureCardRight
+              ]}
+              onPress={() => handleFeaturePress(feature.id)}
             >
-              <View style={[styles.toolIconContainer, { backgroundColor: tool.color }]}>
-                {tool.image ? (
-                  <Image source={tool.image} style={styles.toolImage} />
-                ) : (
-                  <IconSymbol name={tool.iconName!} size={24} color={tool.iconColor!} />
-                )}
+              <View style={[styles.featureIcon, { backgroundColor: feature.color + '20' }]}>
+                <IconSymbol name={feature.icon as any} size={28} color={feature.color} />
               </View>
-              <ThemedText style={styles.toolTitle}>{tool.title}</ThemedText>
-              <ThemedText style={styles.toolDescription}>{tool.description}</ThemedText>
+              <ThemedText style={styles.featureTitle}>{feature.title}</ThemedText>
+              <ThemedText style={styles.featureSubtitle}>{feature.subtitle}</ThemedText>
             </TouchableOpacity>
           ))}
         </View>
@@ -245,13 +243,13 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     fontSize: 18,
   },
-  toolsGrid: {
+  featuresGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
-  toolCard: {
+  featureCard: {
     width: (width - 55) / 2,
     padding: 16,
     borderRadius: 12,
@@ -262,7 +260,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
-  toolIconContainer: {
+  featureCardLeft: {
+    marginRight: 15,
+  },
+  featureCardRight: {
+    marginLeft: 0,
+  },
+  featureIcon: {
     width: 50,
     height: 50,
     borderRadius: 25,
@@ -270,16 +274,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  toolImage: {
-    width: 28,
-    height: 28,
-  },
-  toolTitle: {
-    fontSize: 15,
+  featureTitle: {
+    fontSize: 14,
     fontWeight: '600',
     marginBottom: 4,
   },
-  toolDescription: {
+  featureSubtitle: {
     fontSize: 12,
     opacity: 0.7,
   },
