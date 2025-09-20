@@ -5,9 +5,11 @@ import { ThemedView } from '../themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { IconSymbol } from '../ui/icon-symbol';
+import { useNavigation } from '@/contexts/NavigationContext';
 
 export default function OfflineMaps() {
   const colorScheme = useColorScheme();
+  const { goBack } = useNavigation();
   const [downloadedMaps, setDownloadedMaps] = useState([
     { id: 1, name: 'Paris City Center', size: '45 MB', downloaded: true, lastUpdated: '2 days ago' },
     { id: 2, name: 'Rome Historical District', size: '38 MB', downloaded: true, lastUpdated: '1 week ago' },
@@ -68,6 +70,12 @@ export default function OfflineMaps() {
   return (
     <ThemedView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Back Button */}
+        <TouchableOpacity onPress={goBack} style={styles.backButton}>
+          <IconSymbol name="house.fill" size={20} color="white" />
+          <ThemedText style={styles.backText}>Home</ThemedText>
+        </TouchableOpacity>
+
         {/* Header */}
         <View style={styles.header}>
           <ThemedText type="title" style={styles.title}>
@@ -216,6 +224,27 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    backgroundColor: '#007AFF',
+    borderRadius: 25,
+    alignSelf: 'flex-start',
+    gap: 8,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  backText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
   },
   header: {
     marginBottom: 25,

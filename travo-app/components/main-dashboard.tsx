@@ -84,11 +84,16 @@ export default function MainDashboard() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <ThemedText type="title" style={styles.welcomeText}>
-              Welcome back!
-            </ThemedText>
-            <ThemedText style={styles.touristId}>Tourist ID: {touristId}</ThemedText>
+          <View style={styles.headerLeft}>
+            <View style={[styles.homeIndicator, { backgroundColor: Colors[colorScheme ?? 'light'].tint }]}>
+              <IconSymbol name="house.fill" size={20} color="white" />
+            </View>
+            <View>
+              <ThemedText type="title" style={styles.welcomeText}>
+                Welcome back!
+              </ThemedText>
+              <ThemedText style={styles.touristId}>Tourist ID: {touristId}</ThemedText>
+            </View>
           </View>
           <TouchableOpacity onPress={logout} style={styles.logoutButton}>
             <IconSymbol name="rectangle.portrait.and.arrow.right" size={24} color={Colors[colorScheme ?? 'light'].text} />
@@ -159,6 +164,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingBottom: 20,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  homeIndicator: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   welcomeText: {
     fontSize: 24,

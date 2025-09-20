@@ -5,10 +5,12 @@ import { ThemedView } from '../themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { IconSymbol } from '../ui/icon-symbol';
+import { useNavigation } from '@/contexts/NavigationContext';
 
 export default function SOSEmergency() {
   const [isEmergencyActive, setIsEmergencyActive] = useState(false);
   const colorScheme = useColorScheme();
+  const { goBack } = useNavigation();
 
   const emergencyContacts = [
     { name: 'Police', number: '911', icon: 'shield.fill' },
@@ -45,6 +47,12 @@ export default function SOSEmergency() {
 
   return (
     <ThemedView style={styles.container}>
+      {/* Back Button */}
+      <TouchableOpacity onPress={goBack} style={styles.backButton}>
+        <IconSymbol name="house.fill" size={20} color="white" />
+        <ThemedText style={styles.backText}>Home</ThemedText>
+      </TouchableOpacity>
+
       {/* Emergency Header */}
       <View style={styles.header}>
         <IconSymbol name="exclamationmark.triangle.fill" size={40} color="#FF4444" />
@@ -137,6 +145,27 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    backgroundColor: '#007AFF',
+    borderRadius: 25,
+    alignSelf: 'flex-start',
+    gap: 8,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  backText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
   },
   header: {
     alignItems: 'center',

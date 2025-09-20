@@ -11,7 +11,7 @@ import SafetyScoreDashboard from './features/safety-score-dashboard';
 import OfflineMaps from './features/offline-maps';
 
 export default function AppRouter() {
-  const { currentScreen, goBack } = useNavigation();
+  const { currentScreen } = useNavigation();
   const colorScheme = useColorScheme();
 
   const getScreenTitle = () => {
@@ -57,9 +57,7 @@ export default function AppRouter() {
     <View style={styles.container}>
       {currentScreen !== 'dashboard' && (
         <View style={[styles.header, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-          <TouchableOpacity onPress={goBack} style={styles.backButton}>
-            <IconSymbol name="chevron.left" size={24} color={Colors[colorScheme ?? 'light'].text} />
-          </TouchableOpacity>
+          <View style={styles.headerSpacer} />
           <ThemedText style={styles.headerTitle}>{getScreenTitle()}</ThemedText>
           <View style={styles.headerSpacer} />
         </View>
@@ -71,17 +69,28 @@ export default function AppRouter() {
 
 function PlaceholderScreen({ title }: { title: string }) {
   const colorScheme = useColorScheme();
+  const { goBack } = useNavigation();
   
   return (
-    <View style={[styles.placeholder, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-      <IconSymbol name="gear" size={48} color={Colors[colorScheme ?? 'light'].tabIconDefault} />
-      <ThemedText style={styles.placeholderTitle}>{title}</ThemedText>
-      <ThemedText style={styles.placeholderText}>
-        This feature is coming soon!
-      </ThemedText>
-      <ThemedText style={styles.placeholderSubtext}>
-        We&apos;re working hard to bring you amazing travel tools.
-      </ThemedText>
+    <View style={styles.container}>
+      <View style={styles.placeholderContainer}>
+        {/* Back Button */}
+        <TouchableOpacity onPress={goBack} style={styles.placeholderBackButton}>
+          <IconSymbol name="house.fill" size={20} color="white" />
+          <ThemedText style={styles.placeholderBackText}>Home</ThemedText>
+        </TouchableOpacity>
+
+        <View style={[styles.placeholder, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+          <IconSymbol name="gear" size={48} color={Colors[colorScheme ?? 'light'].tabIconDefault} />
+          <ThemedText style={styles.placeholderTitle}>{title}</ThemedText>
+          <ThemedText style={styles.placeholderText}>
+            This feature is coming soon!
+          </ThemedText>
+          <ThemedText style={styles.placeholderSubtext}>
+            We&apos;re working hard to bring you amazing travel tools.
+          </ThemedText>
+        </View>
+      </View>
     </View>
   );
 }
@@ -96,12 +105,28 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingBottom: 15,
     paddingHorizontal: 20,
-    borderBottomWidth: 1,
+    borderBottomWidth: 2,
     borderBottomColor: '#E0E0E0',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   backButton: {
     padding: 8,
     marginRight: 8,
+    backgroundColor: '#007AFF',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
   },
   headerTitle: {
     fontSize: 18,
@@ -110,6 +135,31 @@ const styles = StyleSheet.create({
   },
   headerSpacer: {
     width: 40,
+  },
+  placeholderContainer: {
+    flex: 1,
+    padding: 20,
+  },
+  placeholderBackButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    backgroundColor: '#007AFF',
+    borderRadius: 25,
+    alignSelf: 'flex-start',
+    gap: 8,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  placeholderBackText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
   },
   placeholder: {
     flex: 1,
