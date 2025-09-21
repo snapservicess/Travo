@@ -1,74 +1,203 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, RefreshControl, ActivityIndicator } from 'react-native';
 import { ThemedText } from '../themed-text';
 import { ThemedView } from '../themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import { IconSymbol } from '../ui/icon-symbol';
 import { useNavigation } from '@/contexts/NavigationContext';
+import { useAuth } from '@/contexts/AuthContext';
+import LocationService from '@/services/LocationService';
+import * as Location from 'expo-location';
 
 const { width } = Dimensions.get('window');
+
+interface SafetyData {
+  overallScore: number;
+  locationSafety: number;
+  healthPrecautions: number;
+  transportSafety: number;
+  weatherAwareness: number;
+  recommendations: string[];
+  currentLocation?: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+  };
+  riskFactors: {
+    type: string;
+    level: 'low' | 'medium' | 'high';
+    description: string;
+  }[];
+}
 
 export default function SafetyScoreDashboard() {
   const colorScheme = useColorScheme();
   const [selectedPeriod, setSelectedPeriod] = useState('week');
-  const { goBack } = useNavigation();
+  const [safetyData, setSafetyData] = useState<SafetyData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
-  const safetyScore = 85;
+  const { userToken } = useAuth();
+
+  // Set up location service with auth token
+  useEffect(() => {
+    if (userToken) {
+      LocationService.setAuthToken(userToken);
+      loadSafetyData();
+    }
+  }, [userToken]);
+
+  const loadSafetyData = async () => {
+    try {
+      setIsLoading(true);
+
+      // Get current location first
+      const hasPermission = await LocationService.requestPermissions();
+      if (hasPermission) {
+        const location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+
+        const coords = {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        };
+
+        setCurrentLocation(coords);
+
+        // Get enhanced safety score
+        const safetyScore = await LocationService.getEnhancedSafetyScore(coords);
+        
+        if (safetyScore) {
+          setSafetyData(safetyScore);
+        } else {
+          // Fallback data if API fails
+          setSafetyData({
+            overallScore: 85,
+            locationSafety: 92,
+            healthPrecautions: 88,
+            transportSafety: 75,
+            weatherAwareness: 85,
+            recommendations: [
+              'Update emergency contacts',
+              'Check weather updates',
+              'Download offline maps'
+            ],
+            riskFactors: []
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading safety data:', error);
+      // Set fallback data
+      setSafetyData({
+        overallScore: 85,
+        locationSafety: 92,
+        healthPrecautions: 88,
+        transportSafety: 75,
+        weatherAwareness: 85,
+        recommendations: [
+          'Update emergency contacts',
+          'Check weather updates', 
+          'Download offline maps'
+        ],
+        riskFactors: []
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadSafetyData();
+    setRefreshing(false);
+  };
+
+  if (isLoading) {
+    return (
+      <ThemedView style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].primary} />
+        <ThemedText style={styles.loadingText}>Loading safety data...</ThemedText>
+      </ThemedView>
+    );
+  }
+
+  const safetyScore = safetyData?.overallScore || 85;
   const safetyLevel = safetyScore >= 80 ? 'Excellent' : safetyScore >= 60 ? 'Good' : 'Needs Attention';
   const scoreColor = safetyScore >= 80 ? '#4CAF50' : safetyScore >= 60 ? '#FF9800' : '#FF4444';
 
   const metrics = [
     {
       title: 'Location Safety',
-      score: 92,
+      score: safetyData?.locationSafety || 92,
       icon: 'location.fill',
       trend: '+5%',
       trendUp: true,
     },
     {
-      title: 'Health Precautions',
-      score: 88,
+      title: 'Health Precautions', 
+      score: safetyData?.healthPrecautions || 88,
       icon: 'cross.fill',
       trend: '+2%',
       trendUp: true,
     },
     {
       title: 'Transport Safety',
-      score: 75,
+      score: safetyData?.transportSafety || 75,
       icon: 'car.fill',
       trend: '-3%',
       trendUp: false,
     },
     {
       title: 'Weather Awareness',
-      score: 85,
+      score: safetyData?.weatherAwareness || 85,
       icon: 'cloud.sun.fill',
       trend: '+8%',
       trendUp: true,
     },
   ];
 
-  const recommendations = [
-    {
-      title: 'Update Emergency Contacts',
-      description: 'Add local emergency contacts for your destination',
-      priority: 'high',
-      icon: 'phone.fill',
-    },
-    {
-      title: 'Check Weather Updates',
-      description: 'Monitor weather conditions for the next 3 days',
-      priority: 'medium',
-      icon: 'cloud.fill',
-    },
-    {
-      title: 'Download Offline Maps',
-      description: 'Ensure you have offline maps for your area',
-      priority: 'medium',
-      icon: 'map.fill',
-    },
-  ];
+  const getRecommendations = () => {
+    const defaultRecs = [
+      {
+        title: 'Update Emergency Contacts',
+        description: 'Add local emergency contacts for your destination',
+        priority: 'high',
+        icon: 'phone.fill',
+      },
+      {
+        title: 'Check Weather Updates',
+        description: 'Monitor weather conditions for the next 3 days',
+        priority: 'medium',
+        icon: 'cloud.fill',
+      },
+      {
+        title: 'Download Offline Maps',
+        description: 'Ensure you have offline maps for your area',
+        priority: 'medium',
+        icon: 'map.fill',
+      },
+    ];
+
+    if (safetyData?.recommendations && safetyData.recommendations.length > 0) {
+      return safetyData.recommendations.map((rec, index) => ({
+        title: rec,
+        description: 'AI-generated safety recommendation based on your location',
+        priority: index === 0 ? 'high' : 'medium',
+        icon: 'lightbulb.fill',
+      }));
+    }
+
+    return defaultRecs;
+  };
+
+  const recommendations = getRecommendations();
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -81,7 +210,16 @@ export default function SafetyScoreDashboard() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[Colors[colorScheme ?? 'light'].primary]}
+          />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <ThemedText type="title" style={styles.title}>
@@ -504,5 +642,14 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    opacity: 0.7,
   },
 });

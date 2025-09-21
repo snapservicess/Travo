@@ -74,13 +74,100 @@ const userSchema = new mongoose.Schema({
       push: {
         type: Boolean,
         default: true
+      },
+      emergencyAlerts: {
+        type: Boolean,
+        default: true
+      },
+      safetyAlerts: {
+        type: Boolean,
+        default: true
+      },
+      geofenceAlerts: {
+        type: Boolean,
+        default: true
       }
     },
     emergencyContacts: [{
-      name: String,
-      phone: String,
-      relationship: String
+      name: {
+        type: String,
+        required: true,
+        trim: true
+      },
+      phone: {
+        type: String,
+        required: true,
+        trim: true
+      },
+      email: {
+        type: String,
+        trim: true,
+        lowercase: true
+      },
+      relationship: {
+        type: String,
+        required: true,
+        enum: ['family', 'friend', 'colleague', 'partner', 'parent', 'sibling', 'other']
+      },
+      isPrimary: {
+        type: Boolean,
+        default: false
+      },
+      isActive: {
+        type: Boolean,
+        default: true
+      },
+      addedAt: {
+        type: Date,
+        default: Date.now
+      }
     }]
+  },
+  // Push notification settings
+  pushToken: {
+    type: String,
+    default: null
+  },
+  platform: {
+    type: String,
+    enum: ['ios', 'android', 'web'],
+    default: null
+  },
+  notificationPreferences: {
+    emergencyAlerts: {
+      type: Boolean,
+      default: true
+    },
+    safetyAlerts: {
+      type: Boolean,
+      default: true
+    },
+    geofenceAlerts: {
+      type: Boolean,
+      default: true
+    },
+    systemNotifications: {
+      type: Boolean,
+      default: true
+    },
+    recommendations: {
+      type: Boolean,
+      default: true
+    },
+    quietHours: {
+      enabled: {
+        type: Boolean,
+        default: false
+      },
+      startTime: {
+        type: String,
+        default: '22:00'
+      },
+      endTime: {
+        type: String,
+        default: '07:00'
+      }
+    }
   },
   isActive: {
     type: Boolean,
@@ -105,7 +192,7 @@ userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   
   try {
-    const salt = await bcrypt.genSalt(12);
+    const salt = await bcrypt.genSalt(8); // Reduced from 12 to 8 for faster login
     this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error) {

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-type ScreenType = 'dashboard' | 'sos' | 'safety' | 'map' | 'events' | 'language' | 'transport' | 'weather' | 'eco';
+type ScreenType = 'dashboard' | 'sos' | 'safety' | 'ai-analytics' | 'intelligent-routes' | 'risk-assessment' | 'map' | 'events' | 'language' | 'transport' | 'weather' | 'eco' | 'nearby-places' | 'history' | 'profile' | 'settings';
 
 interface NavigationContextType {
   currentScreen: ScreenType;

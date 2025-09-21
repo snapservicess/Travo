@@ -10,6 +10,14 @@ import MainDashboard from './main-dashboard';
 import SOSEmergency from './features/sos-emergency';
 import SafetyScoreDashboard from './features/safety-score-dashboard';
 import OfflineMaps from './features/offline-maps';
+import AdvancedAnalyticsDashboard from './features/advanced-analytics-dashboard';
+import IntelligentRouteRecommendations from './features/intelligent-route-recommendations';
+import RiskAssessmentSystem from './features/risk-assessment-system';
+import EventsFestivals from './features/events-festivals';
+import NearbyPlaces from './nearby-places';
+import History from './history';
+import Profile from './profile';
+import Settings from './settings';
 
 export default function AppRouter() {
   const { currentScreen, navigateTo } = useNavigation();
@@ -19,12 +27,19 @@ export default function AppRouter() {
     switch (currentScreen) {
       case 'sos': return 'SOS Emergency';
       case 'safety': return 'Safety Score';
+      case 'ai-analytics': return 'AI Analytics Dashboard';
+      case 'intelligent-routes': return 'Smart Route Recommendations';
+      case 'risk-assessment': return 'AI Risk Assessment';
       case 'map': return 'Offline Maps';
       case 'events': return 'Events & Festivals';
       case 'language': return 'Language Help';
       case 'transport': return 'Transport & Stay';
       case 'weather': return 'Weather & Terrain';
       case 'eco': return 'Eco Tourism';
+      case 'nearby-places': return 'Nearby Places';
+      case 'history': return 'Travel History';
+      case 'profile': return 'Profile';
+      case 'settings': return 'Settings';
       default: return '';
     }
   };
@@ -37,10 +52,16 @@ export default function AppRouter() {
         return <SOSEmergency />;
       case 'safety':
         return <SafetyScoreDashboard />;
+      case 'ai-analytics':
+        return <AdvancedAnalyticsDashboard />;
+      case 'intelligent-routes':
+        return <IntelligentRouteRecommendations />;
+      case 'risk-assessment':
+        return <RiskAssessmentSystem />;
       case 'map':
         return <OfflineMaps />;
       case 'events':
-        return <PlaceholderScreen title="Events & Festivals" />;
+        return <EventsFestivals />;
       case 'language':
         return <PlaceholderScreen title="Language Help" />;
       case 'transport':
@@ -49,6 +70,14 @@ export default function AppRouter() {
         return <PlaceholderScreen title="Weather & Terrain" />;
       case 'eco':
         return <PlaceholderScreen title="Eco Tourism Tips" />;
+      case 'nearby-places':
+        return <NearbyPlaces />;
+      case 'history':
+        return <History />;
+      case 'profile':
+        return <Profile />;
+      case 'settings':
+        return <Settings visible={true} onClose={() => navigateTo('dashboard')} />;
       default:
         return <MainDashboard />;
     }

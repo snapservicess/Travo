@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -7,13 +7,139 @@ import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { IconSymbol } from './ui/icon-symbol';
+import LocationService from '@/services/LocationService';
+import { useWebSocket, useLocationTracking, useEmergencyAlerts } from '@/hooks/useWebSocket';
+import BottomNavigation from './bottom-navigation';
 
 const { width } = Dimensions.get('window');
 
+interface LocationStatus {
+  isActive: boolean;
+  sessionId?: string;
+  safetyScore?: number;
+  lastUpdate?: Date;
+}
+
 export default function MainDashboard() {
   const colorScheme = useColorScheme();
-  const { touristId, logout } = useAuth();
+  const { touristId, userToken } = useAuth();
   const { navigateTo } = useNavigation();
+  
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>({ isActive: false });
+  const [safetyScore, setSafetyScore] = useState(85);
+  const [isLoadingSafety, setIsLoadingSafety] = useState(false);
+
+  // WebSocket integration
+  const { isConnected, connect, error } = useWebSocket({
+    autoConnect: true,
+    callbacks: {
+      onConnection: () => {
+        console.log('Dashboard: Connected to WebSocket');
+      },
+      onSafetyScoreUpdate: (data) => {
+        console.log('Dashboard: Safety score updated:', data.score);
+        setSafetyScore(data.score);
+      },
+      onLocationUpdate: (update) => {
+        console.log('Dashboard: Location update received');
+        setLocationStatus(prev => ({
+          ...prev,
+          lastUpdate: new Date(update.timestamp)
+        }));
+      }
+    }
+  });
+
+  // Location tracking with WebSocket
+  useLocationTracking(locationStatus.isActive);
+
+  // Emergency alerts
+  const { alerts } = useEmergencyAlerts();
+
+  // Initialize location service and check status
+  useEffect(() => {
+    if (userToken) {
+      LocationService.setAuthToken(userToken);
+      checkLocationStatus();
+      loadSafetyStatus();
+    }
+  }, [userToken]);
+
+  const checkLocationStatus = () => {
+    const currentSession = LocationService.getCurrentSession();
+    const isTracking = LocationService.isActivelyTracking();
+    
+    setLocationStatus({
+      isActive: isTracking && (currentSession?.isActive || false),
+      sessionId: currentSession?.sessionId,
+      lastUpdate: isTracking ? new Date() : undefined,
+    });
+  };
+
+  const loadSafetyStatus = async () => {
+    setIsLoadingSafety(true);
+    try {
+      const status = await LocationService.getSafetyStatus();
+      if (status) {
+        setSafetyScore(status.safetyScore);
+      }
+    } catch (error) {
+      console.error('Error loading safety status:', error);
+    } finally {
+      setIsLoadingSafety(false);
+    }
+  };
+
+  const handleStartLocationTracking = async () => {
+    try {
+      const hasPermission = await LocationService.requestPermissions();
+      if (!hasPermission) {
+        Alert.alert('Permission Required', 'Location permission is needed for safety tracking.');
+        return;
+      }
+
+      Alert.alert(
+        'Start Location Tracking',
+        'This will start tracking your location for safety purposes. You can stop this anytime.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Start Tracking',
+            onPress: async () => {
+              const session = await LocationService.startLocationSession(touristId || 'user');
+              if (session) {
+                await LocationService.startTracking();
+                checkLocationStatus();
+                Alert.alert('Success', 'Location tracking started for your safety.');
+              }
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Error starting location tracking:', error);
+      Alert.alert('Error', 'Failed to start location tracking.');
+    }
+  };
+
+  const handleStopLocationTracking = async () => {
+    Alert.alert(
+      'Stop Location Tracking',
+      'This will stop tracking your location. You can restart it anytime.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Stop Tracking',
+          onPress: async () => {
+            await LocationService.stopTracking();
+            await LocationService.endLocationSession();
+            setLocationStatus({ isActive: false });
+            Alert.alert('Success', 'Location tracking stopped.');
+          }
+        }
+      ]
+    );
+  };
 
   const features = [
     {
@@ -30,6 +156,30 @@ export default function MainDashboard() {
       subtitle: 'Check your safety',
       icon: 'shield.checkered',
       color: '#4CAF50',
+    },
+    {
+      id: 'ai-analytics',
+      title: 'AI Analytics',
+      subtitle: 'Advanced insights',
+      icon: 'brain.head.profile',
+      color: '#6B46C1',
+      new: true
+    },
+    {
+      id: 'intelligent-routes',
+      title: 'Smart Routes',
+      subtitle: 'AI recommendations',
+      icon: 'location.north.line',
+      color: '#3B82F6',
+      new: true
+    },
+    {
+      id: 'risk-assessment',
+      title: 'Risk Monitor',
+      subtitle: 'Real-time alerts',
+      icon: 'eye.trianglebadge.exclamationmark',
+      color: '#EF4444',
+      new: true
     },
     {
       id: 'map',
@@ -95,8 +245,19 @@ export default function MainDashboard() {
               <ThemedText style={styles.touristId}>Tourist ID: {touristId}</ThemedText>
             </View>
           </View>
-          <TouchableOpacity onPress={logout} style={styles.logoutButton}>
-            <IconSymbol name="rectangle.portrait.and.arrow.right" size={24} color={Colors[colorScheme ?? 'light'].text} />
+          <TouchableOpacity 
+            onPress={() => navigateTo('settings')} 
+            style={[
+              styles.settingsButton, 
+              { 
+                backgroundColor: colorScheme === 'dark' 
+                  ? Colors[colorScheme].card 
+                  : Colors[colorScheme ?? 'light'].tint + '10',
+                borderColor: Colors[colorScheme ?? 'light'].tint + '30',
+              }
+            ]}
+          >
+            <IconSymbol name="gearshape.fill" size={22} color={Colors[colorScheme ?? 'light'].tint} />
           </TouchableOpacity>
         </View>
 
@@ -110,6 +271,60 @@ export default function MainDashboard() {
           <ThemedText style={styles.sosSubtext}>Tap for immediate help</ThemedText>
         </TouchableOpacity>
 
+        {/* Location Tracking Status */}
+        <View style={[
+          styles.locationCard, 
+          { 
+            backgroundColor: locationStatus.isActive 
+              ? (colorScheme === 'dark' ? '#10B98130' : '#E8F5E8')
+              : Colors[colorScheme ?? 'light'].card,
+            borderColor: locationStatus.isActive 
+              ? Colors[colorScheme ?? 'light'].success
+              : Colors[colorScheme ?? 'light'].border,
+          }
+        ]}>
+          <View style={styles.locationHeader}>
+            <View style={styles.locationInfo}>
+              <IconSymbol 
+                name={locationStatus.isActive ? "location.fill" : "location"} 
+                size={24} 
+                color={locationStatus.isActive ? Colors[colorScheme ?? 'light'].success : Colors[colorScheme ?? 'light'].icon} 
+              />
+              <ThemedText style={styles.locationTitle}>
+                {locationStatus.isActive ? 'Location Tracking Active' : 'Location Tracking Inactive'}
+              </ThemedText>
+            </View>
+            <TouchableOpacity
+              style={[
+                styles.locationToggle,
+                { 
+                  backgroundColor: locationStatus.isActive 
+                    ? Colors[colorScheme ?? 'light'].error
+                    : Colors[colorScheme ?? 'light'].success 
+                }
+              ]}
+              onPress={locationStatus.isActive ? handleStopLocationTracking : handleStartLocationTracking}
+            >
+              <ThemedText style={styles.locationToggleText}>
+                {locationStatus.isActive ? 'Stop' : 'Start'}
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+          
+          {locationStatus.isActive && locationStatus.sessionId && (
+            <View style={styles.sessionInfo}>
+              <ThemedText style={styles.sessionText}>
+                Session ID: {locationStatus.sessionId.slice(-8)}
+              </ThemedText>
+              {locationStatus.lastUpdate && (
+                <ThemedText style={styles.sessionText}>
+                  Last Update: {locationStatus.lastUpdate.toLocaleTimeString()}
+                </ThemedText>
+              )}
+            </View>
+          )}
+        </View>
+
         {/* Quick Stats */}
         <View style={styles.statsContainer}>
           <View style={[
@@ -121,7 +336,11 @@ export default function MainDashboard() {
             }
           ]}>
             <IconSymbol name="shield.checkered" size={24} color={Colors[colorScheme ?? 'light'].success} />
-            <ThemedText style={styles.statNumber}>85%</ThemedText>
+            {isLoadingSafety ? (
+              <ActivityIndicator size="small" color={Colors[colorScheme ?? 'light'].primary} />
+            ) : (
+              <ThemedText style={styles.statNumber}>{safetyScore}%</ThemedText>
+            )}
             <ThemedText style={styles.statLabel}>Safety Score</ThemedText>
           </View>
           <View style={[
@@ -132,11 +351,45 @@ export default function MainDashboard() {
               borderWidth: colorScheme === 'dark' ? 1 : 0,
             }
           ]}>
-            <IconSymbol name="location.fill" size={24} color={Colors[colorScheme ?? 'light'].primary} />
-            <ThemedText style={styles.statNumber}>3</ThemedText>
-            <ThemedText style={styles.statLabel}>Maps Downloaded</ThemedText>
+            <IconSymbol 
+              name={isConnected ? "antenna.radiowaves.left.and.right" : "antenna.radiowaves.left.and.right.slash"} 
+              size={24} 
+              color={isConnected ? Colors[colorScheme ?? 'light'].success : Colors[colorScheme ?? 'light'].error} 
+            />
+            <ThemedText style={[styles.statNumber, { color: isConnected ? Colors[colorScheme ?? 'light'].success : Colors[colorScheme ?? 'light'].error }]}>
+              {isConnected ? 'Live' : 'Offline'}
+            </ThemedText>
+            <ThemedText style={styles.statLabel}>Real-time Status</ThemedText>
           </View>
         </View>
+
+        {/* Emergency Alerts Status */}
+        {alerts.length > 0 && (
+          <View style={[styles.alertsContainer, { backgroundColor: Colors[colorScheme ?? 'light'].error + '20' }]}>
+            <View style={styles.alertHeader}>
+              <IconSymbol name="exclamationmark.triangle.fill" size={20} color={Colors[colorScheme ?? 'light'].error} />
+              <ThemedText style={[styles.alertTitle, { color: Colors[colorScheme ?? 'light'].error }]}>
+                Recent Alerts ({alerts.length})
+              </ThemedText>
+            </View>
+            <ThemedText style={styles.alertText}>
+              {alerts[0]?.message || 'Emergency alert received'}
+            </ThemedText>
+          </View>
+        )}
+
+        {/* WebSocket Error Display */}
+        {error && (
+          <View style={[styles.errorContainer, { backgroundColor: Colors[colorScheme ?? 'light'].error + '20' }]}>
+            <IconSymbol name="wifi.exclamationmark" size={20} color={Colors[colorScheme ?? 'light'].error} />
+            <ThemedText style={[styles.errorText, { color: Colors[colorScheme ?? 'light'].error }]}>
+              Connection Error: {error}
+            </ThemedText>
+            <TouchableOpacity onPress={connect} style={styles.retryButton}>
+              <ThemedText style={styles.retryText}>Retry</ThemedText>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Features Grid */}
         <ThemedText type="subtitle" style={styles.sectionTitle}>
@@ -151,13 +404,18 @@ export default function MainDashboard() {
                 styles.featureCard,
                 { 
                   backgroundColor: Colors[colorScheme ?? 'light'].card,
-                  borderColor: Colors[colorScheme ?? 'light'].border,
-                  borderWidth: colorScheme === 'dark' ? 1 : 0,
+                  borderColor: feature.new ? feature.color : Colors[colorScheme ?? 'light'].border,
+                  borderWidth: feature.new ? 2 : (colorScheme === 'dark' ? 1 : 0),
                 },
                 index % 2 === 0 ? styles.featureCardLeft : styles.featureCardRight
               ]}
               onPress={() => handleFeaturePress(feature.id)}
             >
+              {feature.new && (
+                <View style={[styles.newBadge, { backgroundColor: feature.color }]}>
+                  <ThemedText style={styles.newBadgeText}>NEW</ThemedText>
+                </View>
+              )}
               <View style={[
                 styles.featureIcon, 
                 { 
@@ -174,6 +432,9 @@ export default function MainDashboard() {
           ))}
         </View>
       </ScrollView>
+      
+      {/* Bottom Navigation */}
+      <BottomNavigation />
     </ThemedView>
   );
 }
@@ -189,6 +450,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingBottom: 20,
+    paddingTop: 10,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -210,8 +472,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     opacity: 0.7,
   },
-  logoutButton: {
-    padding: 8,
+  settingsButton: {
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    minWidth: 44,
+    minHeight: 44,
   },
   sosButton: {
     margin: 20,
@@ -307,5 +580,114 @@ const styles = StyleSheet.create({
   featureSubtitle: {
     fontSize: 12,
     opacity: 0.7,
+  },
+  newBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    zIndex: 1,
+  },
+  newBadgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  // Location Tracking Styles
+  locationCard: {
+    margin: 20,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  locationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  locationInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  locationTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  locationToggle: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  locationToggleText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  sessionInfo: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  sessionText: {
+    fontSize: 12,
+    opacity: 0.7,
+    marginBottom: 2,
+  },
+  // Alert and Error Styles
+  alertsContainer: {
+    margin: 20,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FF444430',
+  },
+  alertHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  alertTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  alertText: {
+    fontSize: 12,
+    opacity: 0.8,
+  },
+  errorContainer: {
+    margin: 20,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FF444430',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 12,
+  },
+  retryButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#FF444430',
+    borderRadius: 6,
+  },
+  retryText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FF4444',
   },
 });

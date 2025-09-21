@@ -1,5 +1,6 @@
 import * as Location from 'expo-location';
 import { Platform } from 'react-native';
+import { webSocketClient } from './WebSocketClient';
 
 export interface LocationCoordinates {
   latitude: number;
@@ -133,7 +134,7 @@ class LocationService {
             longitude: location.coords.longitude,
           },
           altitude: location.coords.altitude || undefined,
-          accuracy: location.coords.accuracy,
+          accuracy: location.coords.accuracy || undefined,
           heading: location.coords.heading || undefined,
           speed: location.coords.speed || undefined,
           timestamp: new Date(location.timestamp),
@@ -195,16 +196,27 @@ class LocationService {
         },
         async (location: Location.LocationObject) => {
           try {
-            const response = await this.updateLocation({
+            const locationUpdate = {
               coordinates: {
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude,
               },
               altitude: location.coords.altitude || undefined,
-              accuracy: location.coords.accuracy,
+              accuracy: location.coords.accuracy || undefined,
               heading: location.coords.heading || undefined,
               speed: location.coords.speed || undefined,
               timestamp: new Date(location.timestamp),
+            };
+
+            // Send location to backend API
+            const response = await this.updateLocation(locationUpdate);
+
+            // Also send real-time update via WebSocket
+            webSocketClient.sendLocationUpdate({
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+              accuracy: location.coords.accuracy || undefined,
+              timestamp: Date.now(),
             });
 
             if (response && onLocationUpdate) {

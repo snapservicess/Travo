@@ -21,6 +21,10 @@ const { jwtService, authenticateToken, optionalAuth } = require('./utils/jwt');
 const notificationService = require('./services/notificationService');
 const geofenceService = require('./services/geofenceService');
 const locationService = require('./services/locationService');
+const websocketService = require('./services/websocketService');
+
+// Route imports
+const notificationRoutes = require('./routes/notifications');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -43,6 +47,9 @@ app.use('/api/', limiter);
 // Body Parser
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Add notification routes
+app.use('/api/notifications', notificationRoutes);
 
 // Initialize Database Connection
 async function initializeDatabase() {
@@ -112,9 +119,26 @@ app.post('/api/auth/login', async (req, res) => {
 
     let user = null;
 
-    // Try MongoDB first, fallback to in-memory
-    if (database.isConnected()) {
-      user = await User.findByTouristId(touristId);
+    // Fast development login bypass for testing
+    if (process.env.NODE_ENV === 'development' && touristId === 'DEMO' && password === 'demo123') {
+      user = {
+        _id: 'demo-user-123',
+        touristId: 'DEMO',
+        email: 'demo@travo.com',
+        profile: {
+          name: 'Demo Tourist',
+          phone: '+1234567890',
+          nationality: 'Demo',
+          passportNumber: 'DEMO123',
+          emergencyContact: '+1234567899'
+        },
+        lastLogin: new Date()
+      };
+      
+      console.log('🚀 Fast demo login successful');
+    } else if (database.isConnected()) {
+      // Try MongoDB with optimized query
+      user = await User.findByTouristId(touristId).select('+password'); // Explicitly select password
       
       if (user) {
         const isValidPassword = await user.comparePassword(password);
@@ -125,9 +149,10 @@ app.post('/api/auth/login', async (req, res) => {
           });
         }
         
-        // Update last login
-        user.lastLogin = new Date();
-        await user.save();
+        // Update last login asynchronously to not block response
+        setImmediate(() => {
+          User.updateOne({ _id: user._id }, { lastLogin: new Date() }).catch(console.error);
+        });
       }
     } else {
       // Fallback to in-memory storage
@@ -1851,21 +1876,30 @@ app.post('/api/dashboard/tourist/location', async (req, res) => {
   }
 });
 
-// Get Dashboard Analytics
+// Get Dashboard Analytics with Real-time WebSocket Data
 app.get('/api/dashboard/analytics', authenticateToken('officer'), async (req, res) => {
   try {
+    const wsStats = websocketService.getStats();
+    
     const analytics = {
       touristStats: {
-        totalActive: 4,
+        totalActive: wsStats.connectedTourists,
         totalInactive: 3, 
         justCheckedIn: 3,
         totalToday: 24
       },
       emergencyStats: {
-        activeCases: 21,
+        activeCases: wsStats.activeEmergencies,
         avgResponseTime: '32 mins',
         totalIncidentsToday: 24,
         resolved: 156
+      },
+      webSocketStats: {
+        connectedTourists: wsStats.connectedTourists,
+        connectedOfficers: wsStats.connectedOfficers,
+        activeEmergencies: wsStats.activeEmergencies,
+        locationUpdates: wsStats.locationUpdates,
+        serverUptime: Math.floor(wsStats.uptime / 60) + ' minutes'
       },
       locationHotspots: [
         { area: 'Times Square', count: 12, risk: 'medium' },
@@ -1890,6 +1924,133 @@ app.get('/api/dashboard/analytics', authenticateToken('officer'), async (req, re
     res.status(500).json({
       success: false,
       message: 'Failed to fetch analytics'
+    });
+  }
+});
+
+// ========== WEBSOCKET INTEGRATION API ROUTES ==========
+
+// Trigger WebSocket broadcast from REST API
+app.post('/api/websocket/broadcast', authenticateToken('officer'), async (req, res) => {
+  try {
+    const { event, data, target } = req.body;
+    
+    if (!event || !data) {
+      return res.status(400).json({
+        success: false,
+        message: 'Event and data are required'
+      });
+    }
+
+    // Broadcast via WebSocket
+    if (target === 'dashboard') {
+      websocketService.broadcastToDashboard(event, data);
+    } else if (target === 'all_tourists') {
+      websocketService.io.emit(event, data);
+    } else if (target && target.startsWith('user_')) {
+      websocketService.io.to(target).emit(event, data);
+    } else {
+      websocketService.io.emit(event, data);
+    }
+
+    res.json({
+      success: true,
+      message: 'WebSocket broadcast sent',
+      event,
+      target: target || 'all',
+      timestamp: new Date()
+    });
+
+  } catch (error) {
+    console.error('WebSocket broadcast error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to broadcast WebSocket message'
+    });
+  }
+});
+
+// Get WebSocket connection statistics
+app.get('/api/websocket/stats', authenticateToken('officer'), (req, res) => {
+  try {
+    const stats = websocketService.getStats();
+    
+    res.json({
+      success: true,
+      stats,
+      connections: {
+        tourists: stats.connectedTourists,
+        officers: stats.connectedOfficers,
+        total: stats.connectedTourists + stats.connectedOfficers
+      },
+      system: {
+        uptime: stats.uptime,
+        activeEmergencies: stats.activeEmergencies,
+        locationUpdates: stats.locationUpdates
+      }
+    });
+
+  } catch (error) {
+    console.error('WebSocket stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get WebSocket statistics'
+    });
+  }
+});
+
+// Send emergency alert via REST API (integrates with WebSocket)
+app.post('/api/websocket/emergency', authenticateToken('tourist'), async (req, res) => {
+  try {
+    const { type, location, message, severity } = req.body;
+    const touristId = req.user.touristId;
+
+    if (!location) {
+      return res.status(400).json({
+        success: false,
+        message: 'Location data is required for emergency alerts'
+      });
+    }
+
+    // Create emergency data
+    const emergencyData = {
+      type: type || 'sos',
+      location,
+      message: message || 'Emergency assistance needed',
+      severity: severity || 'high'
+    };
+
+    // Broadcast via WebSocket to all connected clients
+    websocketService.broadcastToDashboard('emergency_alert', {
+      touristId,
+      userId: req.user.id,
+      ...emergencyData,
+      timestamp: new Date()
+    });
+
+    // Also broadcast to nearby tourists
+    websocketService.broadcastToNearbyTourists(location, 2000, 'nearby_emergency', {
+      type: emergencyData.type,
+      location: emergencyData.location,
+      message: 'Emergency reported in your area. Stay alert.',
+      severity: 'warning'
+    });
+
+    res.json({
+      success: true,
+      message: 'Emergency alert broadcasted via WebSocket',
+      emergencyData: {
+        touristId,
+        ...emergencyData,
+        timestamp: new Date()
+      }
+    });
+
+  } catch (error) {
+    console.error('WebSocket emergency alert error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to broadcast emergency alert'
     });
   }
 });
@@ -1922,13 +2083,27 @@ async function startServer() {
     // Initialize database connection
     await initializeDatabase();
     
+    // Create HTTP server
+    const http = require('http');
+    const httpServer = http.createServer(app);
+    
+    // Initialize WebSocket service
+    websocketService.initialize(httpServer);
+    
     // Start the server
-    app.listen(PORT, () => {
+    httpServer.listen(PORT, () => {
       console.log(`🚀 Travo Backend Server running on port ${PORT}`);
       console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
       console.log(`📱 API Base URL: http://localhost:${PORT}/api`);
+      console.log(`🌐 WebSocket URL: ws://localhost:${PORT}`);
       console.log(`🔒 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🗄️  Database: ${database.isConnected() ? 'MongoDB Connected' : 'In-Memory Mode'}`);
+      
+      // Log WebSocket stats periodically
+      setInterval(() => {
+        const stats = websocketService.getStats();
+        console.log(`📊 WebSocket Stats: ${stats.connectedTourists} tourists, ${stats.connectedOfficers} officers, ${stats.activeEmergencies} emergencies`);
+      }, 60000); // Every minute
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
