@@ -89,12 +89,12 @@ export default function AdvancedAnalyticsDashboard() {
       {
         label: 'Safety Score',
         data: [85, 87, 84, 89, 92, 88, 87],
-        color: Colors[colorScheme ?? 'light'].success
+        color: '#10B981' // Green for safety
       },
       {
-        label: 'Tourist Activity',
-        data: [120, 145, 132, 168, 192, 158, 147],
-        color: Colors[colorScheme ?? 'light'].primary
+        label: 'Tourist Activity', 
+        data: [12, 14, 13, 16, 19, 15, 14], // Normalized for better visualization
+        color: '#3B82F6' // Blue for activity
       }
     ]
   });
@@ -198,24 +198,27 @@ export default function AdvancedAnalyticsDashboard() {
 
   const renderSimpleChart = (data: ChartData) => {
     const maxValue = Math.max(...data.datasets.flatMap(d => d.data));
-    const chartHeight = 120;
+    const chartHeight = 100;
+    const barWidth = (screenWidth - 80) / data.labels.length;
     
     return (
       <View style={styles.chartContainer}>
         <View style={styles.chartArea}>
-          {data.datasets.map((dataset, datasetIndex) => (
-            <View key={datasetIndex} style={styles.chartLine}>
-              {dataset.data.map((value, index) => {
-                const height = (value / maxValue) * chartHeight;
+          {data.labels.map((label, index) => (
+            <View key={index} style={[styles.chartGroup, { width: barWidth }]}>
+              {data.datasets.map((dataset, datasetIndex) => {
+                const height = (dataset.data[index] / maxValue) * chartHeight;
                 return (
                   <View
-                    key={index}
+                    key={`${index}-${datasetIndex}`}
                     style={[
                       styles.chartBar,
                       {
-                        height,
+                        height: height || 2,
                         backgroundColor: dataset.color,
-                        opacity: 0.7 + (datasetIndex * 0.1)
+                        opacity: 0.8,
+                        marginLeft: datasetIndex > 0 ? 2 : 0,
+                        width: (barWidth - 16) / data.datasets.length,
                       }
                     ]}
                   />
@@ -227,7 +230,9 @@ export default function AdvancedAnalyticsDashboard() {
         
         <View style={styles.chartLabels}>
           {data.labels.map((label, index) => (
-            <ThemedText key={index} style={styles.chartLabel}>{label}</ThemedText>
+            <View key={index} style={[styles.chartLabelContainer, { width: barWidth }]}>
+              <ThemedText style={styles.chartLabel}>{label}</ThemedText>
+            </View>
           ))}
         </View>
       </View>
@@ -329,14 +334,22 @@ export default function AdvancedAnalyticsDashboard() {
         </View>
 
         {/* Trend Chart */}
-        <View style={[styles.chartCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+        <View style={[
+          styles.chartCard, 
+          { 
+            backgroundColor: Colors[colorScheme ?? 'light'].card,
+            borderWidth: 0,
+          }
+        ]}>
           <View style={styles.chartHeader}>
             <ThemedText style={styles.chartTitle}>Trend Analysis</ThemedText>
             <View style={styles.chartLegend}>
               {chartData.datasets.map((dataset, index) => (
                 <View key={index} style={styles.legendItem}>
                   <View style={[styles.legendColor, { backgroundColor: dataset.color }]} />
-                  <ThemedText style={styles.legendLabel}>{dataset.label}</ThemedText>
+                  <ThemedText style={[styles.legendLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
+                    {dataset.label}
+                  </ThemedText>
                 </View>
               ))}
             </View>
@@ -583,14 +596,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   metricCard: {
-    padding: 16,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: 16,
     marginBottom: 12,
-    elevation: 2,
+    elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
   },
   metricHeader: {
     flexDirection: 'row',
@@ -625,14 +638,14 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   chartCard: {
-    padding: 16,
-    borderRadius: 12,
+    padding: 20,
+    borderRadius: 16,
     marginBottom: 20,
-    elevation: 2,
+    elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
   },
   chartHeader: {
     flexDirection: 'row',
@@ -651,44 +664,51 @@ const styles = StyleSheet.create({
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   legendColor: {
-    width: 12,
-    height: 12,
-    borderRadius: 2,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   legendLabel: {
-    fontSize: 12,
+    fontSize: 11,
+    fontWeight: '500',
   },
   chartContainer: {
-    height: 140,
+    height: 130,
+    paddingVertical: 10,
   },
   chartArea: {
-    flex: 1,
+    height: 100,
     flexDirection: 'row',
     alignItems: 'flex-end',
-    justifyContent: 'space-around',
-    paddingHorizontal: 10,
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
+    marginBottom: 10,
+    backgroundColor: 'transparent',
   },
-  chartLine: {
-    flex: 1,
-    alignItems: 'center',
+  chartGroup: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   chartBar: {
-    width: 20,
-    borderRadius: 2,
-    marginHorizontal: 2,
+    borderRadius: 3,
+    minHeight: 2,
   },
   chartLabels: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: 10,
-    paddingTop: 8,
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
+  },
+  chartLabelContainer: {
+    alignItems: 'center',
   },
   chartLabel: {
     fontSize: 10,
     opacity: 0.7,
+    textAlign: 'center',
   },
   insightsSection: {
     marginBottom: 20,
